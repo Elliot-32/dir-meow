@@ -7,13 +7,14 @@ setopt AUTO_PUSHD
 [[ -o interactive ]] || return 0
 
 # Resolve this file once so the preview helper works regardless of cwd or how
-# the plugin was loaded (source, Sheldon, etc.).
-typeset -gr DIR_MEOW_ROOT=${${(%):-%N}:A:h}
-typeset -gr DIR_MEOW_PREVIEW_HELPER="$DIR_MEOW_ROOT/bin/dir-meow-preview"
+# the plugin was loaded (source, Sheldon, etc.). Keep these writable so sourcing
+# the plugin again is harmless.
+typeset -g DIR_MEOW_ROOT=${${(%):-%N}:A:h}
+typeset -g DIR_MEOW_PREVIEW_HELPER="$DIR_MEOW_ROOT/bin/dir-meow-preview"
 
 _dir_meow_widget() {
   emulate -L zsh
-  setopt localoptions pipefail
+  setopt localoptions pipefail auto_pushd
 
   if (( ! $+commands[fzf] )); then
     zle -M 'dir-meow: fzf is required'
@@ -45,10 +46,11 @@ _dir_meow_widget() {
   }
   print -r -- atuin >| "$state_file"
 
-  # fzf preview subprocesses inherit these, avoiding fragile quoting of plugin
-  # paths and the temporary state file inside action strings.
-  export DIR_MEOW_PREVIEW_HELPER
-  export DIR_MEOW_STATE_FILE=$state_file
+  # fzf preview subprocesses inherit these scoped variables, avoiding fragile
+  # quoting of plugin paths and the temporary state file inside action strings.
+  local preview_helper=$DIR_MEOW_PREVIEW_HELPER
+  local -x DIR_MEOW_PREVIEW_HELPER=$preview_helper
+  local -x DIR_MEOW_STATE_FILE=$state_file
 
   local selected status
   selected=$(
@@ -68,7 +70,6 @@ _dir_meow_widget() {
   status=$?
 
   rm -f -- "$state_file"
-  unset DIR_MEOW_STATE_FILE
 
   (( status == 0 )) || {
     zle reset-prompt
