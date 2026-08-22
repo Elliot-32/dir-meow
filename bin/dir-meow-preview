@@ -158,7 +158,9 @@ _dir_meow_preview_eza() {
   local -a args
   args=(--all --long --group-directories-first --color=always)
 
-  [[ $icons == true ]] && args+=(--icons)
+  # fzf preview output is not necessarily attached directly to a TTY, so make
+  # the enabled setting deterministic instead of relying on eza's auto mode.
+  [[ $icons == true ]] && args+=(--icons=always)
 
   if [[ $tree == true ]]; then
     args+=(--tree "--level=$level")
