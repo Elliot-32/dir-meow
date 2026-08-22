@@ -1,0 +1,190 @@
+#!/usr/bin/env zsh
+
+emulate -L zsh
+setopt localoptions pipefail
+
+_dir_meow_config_file() {
+  local config_home=${XDG_CONFIG_HOME:-}
+
+  # XDG_CONFIG_HOME must be absolute. Fall back to the XDG default otherwise.
+  if [[ -z $config_home || $config_home != /* ]]; then
+    config_home=$HOME/.config
+  fi
+
+  print -r -- "$config_home/dir-meow/config.toml"
+}
+
+_dir_meow_eza_config() {
+  local config_file=$(_dir_meow_config_file)
+
+  # Safe defaults when no config exists.
+  local icons=true
+  local tree=true
+  local level=2
+
+  if [[ -r $config_file ]]; then
+    local parsed
+    parsed=$(awk '
+      function trim(s) {
+        gsub(/^[ \t\r]+|[ \t\r]+$/, "", s)
+        return s
+      }
+
+      BEGIN {
+        section = ""
+        icons = "true"
+        tree = "true"
+        level = "2"
+      }
+
+      {
+        line = $0
+        sub(/[[:space:]]*#.*/, "", line)
+        line = trim(line)
+
+        if (line == "")
+          next
+
+        if (line ~ /^\[[^]]+\]$/) {
+          section = line
+          sub(/^\[/, "", section)
+          sub(/\]$/, "", section)
+          next
+        }
+
+        if (section != "eza")
+          next
+
+        eq = index(line, "=")
+        if (eq == 0)
+          next
+
+        key = trim(substr(line, 1, eq - 1))
+        value = trim(substr(line, eq + 1))
+
+        if (key == "icons" && (value == "true" || value == "false"))
+          icons = value
+        else if (key == "tree" && (value == "true" || value == "false"))
+          tree = value
+        else if (key == "level" && value ~ /^[1-9][0-9]*$/)
+          level = value
+      }
+
+      END {
+        print icons
+        print tree
+        print level
+      }
+    ' "$config_file")
+
+    local -a values
+    values=("${(@f)parsed}")
+    (( ${#values} >= 3 )) && {
+      icons=$values[1]
+      tree=$values[2]
+      level=$values[3]
+    }
+  fi
+
+  print -r -- "$icons"
+  print -r -- "$tree"
+  print -r -- "$level"
+}
+
+_dir_meow_mode() {
+  local state_file=$1
+  local mode=atuin
+
+  if [[ -r $state_file ]]; then
+    IFS= read -r mode < "$state_file"
+  fi
+
+  [[ $mode == eza ]] || mode=atuin
+  print -r -- "$mode"
+}
+
+_dir_meow_toggle() {
+  local state_file=$1
+  local mode=$(_dir_meow_mode "$state_file")
+
+  if [[ $mode == atuin ]]; then
+    print -r -- eza >| "$state_file"
+  else
+    print -r -- atuin >| "$state_file"
+  fi
+}
+
+_dir_meow_label() {
+  case $(_dir_meow_mode "$1") in
+    eza)   print -r -- ' eza ' ;;
+    atuin) print -r -- ' Atuin ' ;;
+  esac
+}
+
+_dir_meow_preview_atuin() {
+  local dir=$1
+
+  if (( ! $+commands[atuin] )); then
+    print -r -- 'dir-meow: atuin is not installed'
+    return 0
+  fi
+
+  if [[ -z ${ATUIN_SESSION:-} ]]; then
+    print -r -- 'dir-meow: ATUIN_SESSION is not set'
+    return 0
+  fi
+
+  (
+    builtin cd -- "$dir" || return
+    command atuin history list --session --cwd --cmd-only
+  )
+}
+
+_dir_meow_preview_eza() {
+  local dir=$1
+
+  if (( ! $+commands[eza] )); then
+    print -r -- 'dir-meow: eza is not installed'
+    return 0
+  fi
+
+  local -a config
+  config=("${(@f)$(_dir_meow_eza_config)}")
+
+  local icons=${config[1]:-true}
+  local tree=${config[2]:-true}
+  local level=${config[3]:-2}
+
+  local -a args
+  args=(--all --long --group-directories-first --color=always)
+
+  [[ $icons == true ]] && args+=(--icons)
+
+  if [[ $tree == true ]]; then
+    args+=(--tree "--level=$level")
+  fi
+
+  command eza "${args[@]}" -- "$dir"
+}
+
+case ${1:-} in
+  preview)
+    (( $# == 3 )) || exit 2
+    case $(_dir_meow_mode "$2") in
+      eza)   _dir_meow_preview_eza "$3" ;;
+      atuin) _dir_meow_preview_atuin "$3" ;;
+    esac
+    ;;
+  toggle)
+    (( $# == 2 )) || exit 2
+    _dir_meow_toggle "$2"
+    ;;
+  label)
+    (( $# == 2 )) || exit 2
+    _dir_meow_label "$2"
+    ;;
+  *)
+    print -u2 -r -- 'usage: dir-meow-preview {preview|toggle|label} ...'
+    exit 2
+    ;;
+esac
