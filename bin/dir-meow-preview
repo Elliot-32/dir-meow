@@ -16,74 +16,53 @@ _dir_meow_config_file() {
 
 _dir_meow_eza_config() {
   local config_file=$(_dir_meow_config_file)
+  local icons tree level
 
-  # Safe defaults when no config exists.
-  local icons=true
-  local tree=true
-  local level=2
+  if [[ -e $config_file ]]; then
+    if [[ ! -r $config_file ]]; then
+      print -r -- "dir-meow: config is not readable: $config_file"
+      return 1
+    fi
 
-  if [[ -r $config_file ]]; then
-    local parsed
-    parsed=$(awk '
-      function trim(s) {
-        gsub(/^[ \t\r]+|[ \t\r]+$/, "", s)
-        return s
-      }
+    if (( ! $+commands[dasel] )); then
+      print -r -- 'dir-meow: dasel is required when config.toml exists'
+      return 1
+    fi
 
-      BEGIN {
-        section = ""
-        icons = "true"
-        tree = "true"
-        level = "2"
-      }
-
-      {
-        line = $0
-        sub(/[[:space:]]*#.*/, "", line)
-        line = trim(line)
-
-        if (line == "")
-          next
-
-        if (line ~ /^\[[^]]+\]$/) {
-          section = line
-          sub(/^\[/, "", section)
-          sub(/\]$/, "", section)
-          next
-        }
-
-        if (section != "eza")
-          next
-
-        eq = index(line, "=")
-        if (eq == 0)
-          next
-
-        key = trim(substr(line, 1, eq - 1))
-        value = trim(substr(line, eq + 1))
-
-        if (key == "icons" && (value == "true" || value == "false"))
-          icons = value
-        else if (key == "tree" && (value == "true" || value == "false"))
-          tree = value
-        else if (key == "level" && value ~ /^[1-9][0-9]*$/)
-          level = value
-      }
-
-      END {
-        print icons
-        print tree
-        print level
-      }
-    ' "$config_file")
-
-    local -a values
-    values=("${(@f)parsed}")
-    (( ${#values} >= 3 )) && {
-      icons=$values[1]
-      tree=$values[2]
-      level=$values[3]
+    icons=$(command dasel -f "$config_file" -o json 'eza.icons' 2>&1) || {
+      print -r -- "dir-meow: failed to read eza.icons from $config_file"
+      print -r -- "$icons"
+      return 1
     }
+    tree=$(command dasel -f "$config_file" -o json 'eza.tree' 2>&1) || {
+      print -r -- "dir-meow: failed to read eza.tree from $config_file"
+      print -r -- "$tree"
+      return 1
+    }
+    level=$(command dasel -f "$config_file" -o json 'eza.level' 2>&1) || {
+      print -r -- "dir-meow: failed to read eza.level from $config_file"
+      print -r -- "$level"
+      return 1
+    }
+  else
+    icons=${DIR_MEOW_EZA_ICONS:-true}
+    tree=${DIR_MEOW_EZA_TREE:-true}
+    level=${DIR_MEOW_EZA_LEVEL:-2}
+  fi
+
+  if [[ $icons != true && $icons != false ]]; then
+    print -r -- 'dir-meow: eza icons must be true or false'
+    return 1
+  fi
+
+  if [[ $tree != true && $tree != false ]]; then
+    print -r -- 'dir-meow: eza tree must be true or false'
+    return 1
+  fi
+
+  if [[ $level != <1-> ]]; then
+    print -r -- 'dir-meow: eza level must be a positive integer'
+    return 1
   fi
 
   print -r -- "$icons"
@@ -148,12 +127,18 @@ _dir_meow_preview_eza() {
     return 0
   fi
 
-  local -a config
-  config=("${(@f)$(_dir_meow_eza_config)}")
+  local config_output
+  config_output=$(_dir_meow_eza_config) || {
+    print -r -- "$config_output"
+    return 0
+  }
 
-  local icons=${config[1]:-true}
-  local tree=${config[2]:-true}
-  local level=${config[3]:-2}
+  local -a config
+  config=("${(@f)config_output}")
+
+  local icons=$config[1]
+  local tree=$config[2]
+  local level=$config[3]
 
   local -a args
   args=(--all --long --group-directories-first --color=always)
