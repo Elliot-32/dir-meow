@@ -44,7 +44,18 @@ _dir_meow_widget() {
     zle -M 'dir-meow: failed to create temporary state file'
     return 1
   }
-  print -r -- atuin >| "$state_file"
+
+  local hidden_default
+  hidden_default=$(zsh "$DIR_MEOW_PREVIEW_HELPER" hidden-default) || {
+    rm -f -- "$state_file"
+    zle -M "${hidden_default:-dir-meow: failed to read configuration}"
+    return 1
+  }
+
+  {
+    print -r -- 'mode=atuin'
+    print -r -- "hidden=$hidden_default"
+  } >| "$state_file"
 
   # fzf preview subprocesses inherit these scoped variables, avoiding fragile
   # quoting of plugin paths and the temporary state file inside action strings.
@@ -61,11 +72,12 @@ _dir_meow_widget() {
         --layout=reverse \
         --border \
         --prompt='dir> ' \
-        --header='Ctrl-O: Atuin/eza preview · Enter: cd · Esc: cancel' \
+        --header='Ctrl-O: Atuin/eza · Alt-U: hidden (eza only) · Enter: cd · Esc: cancel' \
         --preview='zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" {}' \
         --preview-label=' Atuin ' \
         --preview-window='right:60%:wrap' \
-        --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
+        --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")' \
+        --bind='alt-u:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
   )
   status=$?
 
