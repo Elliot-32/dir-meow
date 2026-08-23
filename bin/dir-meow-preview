@@ -41,7 +41,7 @@ _dir_meow_eza_config() {
       value=${line#*=}
 
       case $key in
-        icons|tree|level)
+        icons|tree|level|hidden)
           file_config[$key]=$value
           ;;
         *)
@@ -52,7 +52,7 @@ _dir_meow_eza_config() {
     done < "$config_file"
   fi
 
-  local icons tree level
+  local icons tree level hidden
 
   if (( ${+MEOW_ICONS} )); then
     icons=$MEOW_ICONS
@@ -78,6 +78,14 @@ _dir_meow_eza_config() {
     level=2
   fi
 
+  if (( ${+MEOW_HIDDEN} )); then
+    hidden=$MEOW_HIDDEN
+  elif (( ${+file_config[hidden]} )); then
+    hidden=$file_config[hidden]
+  else
+    hidden=true
+  fi
+
   if [[ $icons != true && $icons != false ]]; then
     print -r -- 'dir-meow: icons must be true or false'
     return 1
@@ -93,38 +101,111 @@ _dir_meow_eza_config() {
     return 1
   fi
 
+  if [[ $hidden != true && $hidden != false ]]; then
+    print -r -- 'dir-meow: hidden must be true or false'
+    return 1
+  fi
+
   print -r -- "$icons"
   print -r -- "$tree"
   print -r -- "$level"
+  print -r -- "$hidden"
+}
+
+_dir_meow_state_get() {
+  local state_file=$1
+  local key=$2
+  local default=$3
+  local line
+
+  if [[ -r $state_file ]]; then
+    while IFS= read -r line || [[ -n $line ]]; do
+      if [[ $line == "$key="* ]]; then
+        print -r -- "${line#*=}"
+        return 0
+      fi
+    done < "$state_file"
+  fi
+
+  print -r -- "$default"
+}
+
+_dir_meow_state_set() {
+  local state_file=$1
+  local key=$2
+  local value=$3
+  local tmp_file="${state_file}.tmp.$$"
+  local line
+  local found=false
+
+  : >| "$tmp_file" || return 1
+
+  if [[ -r $state_file ]]; then
+    while IFS= read -r line || [[ -n $line ]]; do
+      if [[ $line == "$key="* ]]; then
+        print -r -- "$key=$value" >> "$tmp_file"
+        found=true
+      else
+        print -r -- "$line" >> "$tmp_file"
+      fi
+    done < "$state_file"
+  fi
+
+  [[ $found == true ]] || print -r -- "$key=$value" >> "$tmp_file"
+  command mv -f -- "$tmp_file" "$state_file"
 }
 
 _dir_meow_mode() {
-  local state_file=$1
-  local mode=atuin
-
-  if [[ -r $state_file ]]; then
-    IFS= read -r mode < "$state_file"
-  fi
-
+  local mode=$(_dir_meow_state_get "$1" mode atuin)
   [[ $mode == eza ]] || mode=atuin
   print -r -- "$mode"
 }
 
-_dir_meow_toggle() {
+_dir_meow_hidden() {
+  local hidden=$(_dir_meow_state_get "$1" hidden true)
+  [[ $hidden == false ]] || hidden=true
+  print -r -- "$hidden"
+}
+
+_dir_meow_toggle_mode() {
   local state_file=$1
   local mode=$(_dir_meow_mode "$state_file")
 
   if [[ $mode == atuin ]]; then
-    print -r -- eza >| "$state_file"
+    _dir_meow_state_set "$state_file" mode eza
   else
-    print -r -- atuin >| "$state_file"
+    _dir_meow_state_set "$state_file" mode atuin
+  fi
+}
+
+_dir_meow_toggle_hidden() {
+  local state_file=$1
+
+  # Hidden-file toggling belongs to the eza preview only. In Atuin mode this is
+  # deliberately a no-op and never switches preview providers.
+  [[ $(_dir_meow_mode "$state_file") == eza ]] || return 0
+
+  if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
+    _dir_meow_state_set "$state_file" hidden false
+  else
+    _dir_meow_state_set "$state_file" hidden true
   fi
 }
 
 _dir_meow_label() {
-  case $(_dir_meow_mode "$1") in
-    eza)   print -r -- ' eza ' ;;
-    atuin) print -r -- ' Atuin ' ;;
+  local state_file=$1
+
+  case $(_dir_meow_mode "$state_file") in
+    eza)
+      if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
+        print -r -- ' eza [hidden] '
+      else
+        print -r -- ' eza '
+      fi
+      ;;
+    atuin)
+      print -r -- ' Atuin '
+      ;;
   esac
 }
 
@@ -148,7 +229,8 @@ _dir_meow_preview_atuin() {
 }
 
 _dir_meow_preview_eza() {
-  local dir=$1
+  local state_file=$1
+  local dir=$2
 
   if (( ! $+commands[eza] )); then
     print -r -- 'dir-meow: eza is not installed'
@@ -167,9 +249,12 @@ _dir_meow_preview_eza() {
   local icons=$config[1]
   local tree=$config[2]
   local level=$config[3]
+  local hidden=$(_dir_meow_hidden "$state_file")
 
   local -a args
-  args=(--all --oneline --group-directories-first --color=always)
+  args=(--oneline --group-directories-first --color=always)
+
+  [[ $hidden == true ]] && args+=(--all)
 
   # fzf preview output is not necessarily attached directly to a TTY, so make
   # the enabled setting deterministic instead of relying on eza's auto mode.
@@ -186,20 +271,33 @@ case ${1:-} in
   preview)
     (( $# == 3 )) || exit 2
     case $(_dir_meow_mode "$2") in
-      eza)   _dir_meow_preview_eza "$3" ;;
+      eza)   _dir_meow_preview_eza "$2" "$3" ;;
       atuin) _dir_meow_preview_atuin "$3" ;;
     esac
     ;;
-  toggle)
+  toggle-mode)
     (( $# == 2 )) || exit 2
-    _dir_meow_toggle "$2"
+    _dir_meow_toggle_mode "$2"
+    ;;
+  toggle-hidden)
+    (( $# == 2 )) || exit 2
+    _dir_meow_toggle_hidden "$2"
     ;;
   label)
     (( $# == 2 )) || exit 2
     _dir_meow_label "$2"
     ;;
+  hidden-default)
+    (( $# == 1 )) || exit 2
+    config_output=$(_dir_meow_eza_config) || {
+      print -r -- "$config_output"
+      exit 1
+    }
+    config=("${(@f)config_output}")
+    print -r -- "$config[4]"
+    ;;
   *)
-    print -u2 -r -- 'usage: dir-meow-preview {preview|toggle|label} ...'
+    print -u2 -r -- 'usage: dir-meow-preview {preview|toggle-mode|toggle-hidden|label|hidden-default} ...'
     exit 2
     ;;
 esac
