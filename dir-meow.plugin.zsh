@@ -61,11 +61,11 @@ _dir_meow_widget() {
         --layout=reverse \
         --border \
         --prompt='dir> ' \
-        --header='Alt-P: Atuin/eza preview · Enter: cd · Esc: cancel' \
+        --header='Ctrl-O: Atuin/eza preview · Enter: cd · Esc: cancel' \
         --preview='zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" {}' \
         --preview-label=' Atuin ' \
         --preview-window='right:60%:wrap' \
-        --bind='alt-p:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
+        --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
   )
   status=$?
 
