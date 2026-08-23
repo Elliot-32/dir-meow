@@ -54,24 +54,24 @@ _dir_meow_eza_config() {
 
   local icons tree level
 
-  if (( ${+MEOW_EZA_ICONS} )); then
-    icons=$MEOW_EZA_ICONS
+  if (( ${+MEOW_ICONS} )); then
+    icons=$MEOW_ICONS
   elif (( ${+file_config[icons]} )); then
     icons=$file_config[icons]
   else
     icons=true
   fi
 
-  if (( ${+MEOW_EZA_TREE} )); then
-    tree=$MEOW_EZA_TREE
+  if (( ${+MEOW_TREE} )); then
+    tree=$MEOW_TREE
   elif (( ${+file_config[tree]} )); then
     tree=$file_config[tree]
   else
     tree=true
   fi
 
-  if (( ${+MEOW_EZA_LEVEL} )); then
-    level=$MEOW_EZA_LEVEL
+  if (( ${+MEOW_LEVEL} )); then
+    level=$MEOW_LEVEL
   elif (( ${+file_config[level]} )); then
     level=$file_config[level]
   else
