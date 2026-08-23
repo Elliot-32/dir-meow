@@ -3,7 +3,7 @@
 A small Zsh directory-stack navigator built around `pushd`, `fzf`, Atuin, and eza.
 
 - `Alt-R`: open directory history from Zsh's directory stack
-- `Alt-P`: switch the preview between Atuin history and eza
+- `Ctrl-O`: switch the preview between Atuin history and eza
 - `Enter`: `cd` to the selected directory
 - `Esc`: cancel
 
@@ -91,7 +91,7 @@ Options:
 | `tree` | `MEOW_EZA_TREE` | boolean | `true` | Add `--tree` to the eza preview |
 | `level` | `MEOW_EZA_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; ignored when `tree = false` |
 
-The eza preview always uses `--all --long --group-directories-first --color=always`.
+The eza preview shows names only, using `--all --oneline --group-directories-first --color=always` plus the configured icon/tree options.
 
 ## How the Atuin preview is scoped
 
