@@ -38,9 +38,9 @@ source /path/to/dir-meow/dir-meow.plugin.zsh
 Environment variables have highest priority:
 
 ```zsh
-export MEOW_EZA_ICONS=true
-export MEOW_EZA_TREE=true
-export MEOW_EZA_LEVEL=2
+export MEOW_ICONS=true
+export MEOW_TREE=true
+export MEOW_LEVEL=2
 ```
 
 For each unset environment variable, dir-meow falls back to the corresponding value in the XDG config file:
@@ -78,7 +78,7 @@ level=2
 and:
 
 ```zsh
-export MEOW_EZA_LEVEL=4
+export MEOW_LEVEL=4
 ```
 
 only `level` is overridden.
@@ -87,9 +87,9 @@ Options:
 
 | Config key | Environment variable | Type | Default | Effect |
 | --- | --- | --- | --- | --- |
-| `icons` | `MEOW_EZA_ICONS` | boolean | `true` | Add `--icons=always` to the eza preview |
-| `tree` | `MEOW_EZA_TREE` | boolean | `true` | Add `--tree` to the eza preview |
-| `level` | `MEOW_EZA_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; ignored when `tree = false` |
+| `icons` | `MEOW_ICONS` | boolean | `true` | Add `--icons=always` to the eza preview |
+| `tree` | `MEOW_TREE` | boolean | `true` | Add `--tree` to the eza preview |
+| `level` | `MEOW_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; ignored when `tree = false` |
 
 The eza preview shows names only, using `--all --oneline --group-directories-first --color=always` plus the configured icon/tree options.
 
