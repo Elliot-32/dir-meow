@@ -11,12 +11,13 @@ _dir_meow_config_file() {
     config_home=$HOME/.config
   fi
 
-  print -r -- "$config_home/dir-meow/config.toml"
+  print -r -- "$config_home/dir-meow/config"
 }
 
 _dir_meow_eza_config() {
   local config_file=$(_dir_meow_config_file)
-  local icons tree level
+  local -A file_config
+  local line key value
 
   if [[ -e $config_file ]]; then
     if [[ ! -r $config_file ]]; then
@@ -24,44 +25,71 @@ _dir_meow_eza_config() {
       return 1
     fi
 
-    if (( ! $+commands[dasel] )); then
-      print -r -- 'dir-meow: dasel is required when config.toml exists'
-      return 1
-    fi
+    while IFS= read -r line || [[ -n $line ]]; do
+      # The file is intentionally not sourced. Strip comments and whitespace,
+      # then parse the small key=value format ourselves.
+      line=${line%%\#*}
+      line=${line//[[:space:]]/}
+      [[ -z $line ]] && continue
 
-    icons=$(command dasel -f "$config_file" -o json 'eza.icons' 2>&1) || {
-      print -r -- "dir-meow: failed to read eza.icons from $config_file"
-      print -r -- "$icons"
-      return 1
-    }
-    tree=$(command dasel -f "$config_file" -o json 'eza.tree' 2>&1) || {
-      print -r -- "dir-meow: failed to read eza.tree from $config_file"
-      print -r -- "$tree"
-      return 1
-    }
-    level=$(command dasel -f "$config_file" -o json 'eza.level' 2>&1) || {
-      print -r -- "dir-meow: failed to read eza.level from $config_file"
-      print -r -- "$level"
-      return 1
-    }
+      if [[ $line != *=* ]]; then
+        print -r -- "dir-meow: invalid config line: $line"
+        return 1
+      fi
+
+      key=${line%%=*}
+      value=${line#*=}
+
+      case $key in
+        icons|tree|level)
+          file_config[$key]=$value
+          ;;
+        *)
+          print -r -- "dir-meow: unknown config key: $key"
+          return 1
+          ;;
+      esac
+    done < "$config_file"
+  fi
+
+  local icons tree level
+
+  if (( ${+DIR_MEOW_EZA_ICONS} )); then
+    icons=$DIR_MEOW_EZA_ICONS
+  elif (( ${+file_config[icons]} )); then
+    icons=$file_config[icons]
   else
-    icons=${DIR_MEOW_EZA_ICONS:-true}
-    tree=${DIR_MEOW_EZA_TREE:-true}
-    level=${DIR_MEOW_EZA_LEVEL:-2}
+    icons=true
+  fi
+
+  if (( ${+DIR_MEOW_EZA_TREE} )); then
+    tree=$DIR_MEOW_EZA_TREE
+  elif (( ${+file_config[tree]} )); then
+    tree=$file_config[tree]
+  else
+    tree=true
+  fi
+
+  if (( ${+DIR_MEOW_EZA_LEVEL} )); then
+    level=$DIR_MEOW_EZA_LEVEL
+  elif (( ${+file_config[level]} )); then
+    level=$file_config[level]
+  else
+    level=2
   fi
 
   if [[ $icons != true && $icons != false ]]; then
-    print -r -- 'dir-meow: eza icons must be true or false'
+    print -r -- 'dir-meow: icons must be true or false'
     return 1
   fi
 
   if [[ $tree != true && $tree != false ]]; then
-    print -r -- 'dir-meow: eza tree must be true or false'
+    print -r -- 'dir-meow: tree must be true or false'
     return 1
   fi
 
   if [[ $level != <1-> ]]; then
-    print -r -- 'dir-meow: eza level must be a positive integer'
+    print -r -- 'dir-meow: level must be a positive integer'
     return 1
   fi
 
