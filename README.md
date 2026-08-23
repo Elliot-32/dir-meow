@@ -4,6 +4,7 @@ A small Zsh directory-stack navigator built around `pushd`, `fzf`, Atuin, and ez
 
 - `Alt-R`: open directory history from Zsh's directory stack
 - `Ctrl-O`: switch the preview between Atuin history and eza
+- `Alt-U`: toggle hidden files while the eza preview is active
 - `Enter`: `cd` to the selected directory
 - `Esc`: cancel
 
@@ -41,6 +42,7 @@ Environment variables have highest priority:
 export MEOW_ICONS=true
 export MEOW_TREE=true
 export MEOW_LEVEL=2
+export MEOW_HIDDEN=true
 ```
 
 For each unset environment variable, dir-meow falls back to the corresponding value in the XDG config file:
@@ -57,6 +59,7 @@ The config file is a small plain-text `key=value` file and is **not** sourced as
 icons=true
 tree=true
 level=2
+hidden=true
 ```
 
 Blank lines and `#` comments are allowed.
@@ -73,6 +76,7 @@ This means you can keep most settings in the file and override only one from the
 icons=true
 tree=true
 level=2
+hidden=true
 ```
 
 and:
@@ -90,8 +94,11 @@ Options:
 | `icons` | `MEOW_ICONS` | boolean | `true` | Add `--icons=always` to the eza preview |
 | `tree` | `MEOW_TREE` | boolean | `true` | Add `--tree` to the eza preview |
 | `level` | `MEOW_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; ignored when `tree = false` |
+| `hidden` | `MEOW_HIDDEN` | boolean | `true` | Initial hidden-file visibility for each dir-meow invocation |
 
-The eza preview shows names only, using `--all --oneline --group-directories-first --color=always` plus the configured icon/tree options.
+The eza preview shows names only, using `--oneline --group-directories-first --color=always` plus the configured icon/tree options. When hidden files are enabled, `--all` is added.
+
+`Alt-U` changes hidden-file visibility only for the current dir-meow invocation. It works only while the eza preview is active; in Atuin mode it is a no-op and does not switch preview providers. The hidden state is preserved when switching between Atuin and eza with `Ctrl-O`.
 
 ## How the Atuin preview is scoped
 
