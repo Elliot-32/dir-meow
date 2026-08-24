@@ -63,7 +63,7 @@ _dir_meow_widget() {
   local -x DIR_MEOW_PREVIEW_HELPER=$preview_helper
   local -x DIR_MEOW_STATE_FILE=$state_file
 
-  local selected status
+  local selected fzf_status
   selected=$(
     printf '%s\n' "${candidates[@]}" |
       fzf \
@@ -79,11 +79,11 @@ _dir_meow_widget() {
         --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")' \
         --bind='alt-u:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
   )
-  status=$?
+  fzf_status=$?
 
   rm -f -- "$state_file"
 
-  (( status == 0 )) || {
+  (( fzf_status == 0 )) || {
     zle reset-prompt
     return 0
   }
