@@ -14,43 +14,74 @@ _dir_meow_config_file() {
   print -r -- "$config_home/dir-meow/config"
 }
 
+_dir_meow_ensure_config() {
+  local config_file=$1
+  local config_dir=${config_file:h}
+
+  [[ -e $config_file ]] && return 0
+
+  command mkdir -p -- "$config_dir" || {
+    print -r -- "dir-meow: failed to create config directory: $config_dir"
+    return 1
+  }
+
+  # NOCLOBBER prevents a concurrent dir-meow process from overwriting a config
+  # that appeared between the existence check and this write.
+  if [[ ! -e $config_file ]]; then
+    (
+      setopt localoptions noclobber
+      {
+        print -r -- 'icons=true'
+        print -r -- 'tree=true'
+        print -r -- 'level=2'
+        print -r -- 'hidden=true'
+      } > "$config_file"
+    ) 2>/dev/null || {
+      [[ -e $config_file ]] || {
+        print -r -- "dir-meow: failed to create config: $config_file"
+        return 1
+      }
+    }
+  fi
+}
+
 _dir_meow_eza_config() {
   local config_file=$(_dir_meow_config_file)
   local -A file_config
   local line key value
 
-  if [[ -e $config_file ]]; then
-    if [[ ! -r $config_file ]]; then
-      print -r -- "dir-meow: config is not readable: $config_file"
+  _dir_meow_ensure_config "$config_file" || return 1
+
+  if [[ ! -r $config_file ]]; then
+    print -r -- "dir-meow: config is not readable: $config_file"
+    return 1
+  fi
+
+  while IFS= read -r line || [[ -n $line ]]; do
+    # The file is intentionally not sourced. Strip comments and whitespace,
+    # then parse the small key=value format ourselves.
+    line=${line%%\#*}
+    line=${line//[[:space:]]/}
+    [[ -z $line ]] && continue
+
+    if [[ $line != *=* ]]; then
+      print -r -- "dir-meow: invalid config line: $line"
       return 1
     fi
 
-    while IFS= read -r line || [[ -n $line ]]; do
-      # The file is intentionally not sourced. Strip comments and whitespace,
-      # then parse the small key=value format ourselves.
-      line=${line%%\#*}
-      line=${line//[[:space:]]/}
-      [[ -z $line ]] && continue
+    key=${line%%=*}
+    value=${line#*=}
 
-      if [[ $line != *=* ]]; then
-        print -r -- "dir-meow: invalid config line: $line"
+    case $key in
+      icons|tree|level|hidden)
+        file_config[$key]=$value
+        ;;
+      *)
+        print -r -- "dir-meow: unknown config key: $key"
         return 1
-      fi
-
-      key=${line%%=*}
-      value=${line#*=}
-
-      case $key in
-        icons|tree|level|hidden)
-          file_config[$key]=$value
-          ;;
-        *)
-          print -r -- "dir-meow: unknown config key: $key"
-          return 1
-          ;;
-      esac
-    done < "$config_file"
-  fi
+        ;;
+    esac
+  done < "$config_file"
 
   local icons tree level hidden
 
