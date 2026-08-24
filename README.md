@@ -53,6 +53,8 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/dir-meow/config
 
 If `XDG_CONFIG_HOME` is unset, empty, or not an absolute path, dir-meow falls back to `$HOME/.config`.
 
+The config directory and file are created automatically on the first dir-meow invocation if they do not already exist. The generated file contains the built-in defaults; environment-variable overrides are not written into it.
+
 The config file is a small plain-text `key=value` file and is **not** sourced as shell code:
 
 ```text
