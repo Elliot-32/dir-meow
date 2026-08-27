@@ -127,3 +127,7 @@ dirs -pl
 ```
 
 The current directory appears first, followed by the Zsh directory stack. Duplicate paths are removed while preserving their first occurrence, and fzf runs with `--no-sort` so the directory-stack order remains intact.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
