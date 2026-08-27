@@ -1,25 +1,33 @@
 # dir-meow
 
-A small Zsh directory-stack navigator built around `pushd`, `fzf`, Atuin, and eza.
+A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and eza previews.
 
-- `Alt-R`: open directory history from Zsh's directory stack
-- `Ctrl-O`: switch the preview between Atuin history and eza
-- `Alt-U`: toggle hidden files while the eza preview is active
-- `Enter`: `cd` to the selected directory
-- `Esc`: cancel
+`dir-meow` enables Zsh's `AUTO_PUSHD`, so normal `cd` navigation is recorded in the directory stack. It does **not** change `DIRSTACKSIZE`, so your existing stack limit remains in control.
 
-`dir-meow` enables Zsh's `AUTO_PUSHD`, so ordinary `cd` navigation is recorded in the directory stack. It does **not** change `DIRSTACKSIZE`, so your existing limit remains in control.
+## Features
+
+- Browse the current directory and Zsh directory stack with `fzf`
+- Preserve directory-stack order instead of re-sorting candidates by fuzzy-match score
+- Switch the preview between Atuin command history and eza directory contents
+- Toggle hidden files while using the eza preview
+- Configure eza preview behavior through an XDG config file or environment variables
+- Automatically create the default config file on first use
 
 ## Requirements
 
+Required:
+
 - Zsh
-- fzf 0.37+ (for `transform-preview-label`)
+- fzf 0.37+ (`transform-preview-label` is used)
+
+Optional preview providers:
+
 - Atuin
 - eza
 
-Atuin and eza are preview providers. If one is missing, that preview shows an error message and the other mode still works.
+If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works.
 
-## Install
+## Installation
 
 ### Sheldon
 
@@ -34,28 +42,29 @@ github = "Elliot-32/dir-meow"
 source /path/to/dir-meow/dir-meow.plugin.zsh
 ```
 
+## Usage
+
+| Key | Action |
+| --- | --- |
+| `Alt-R` | Open dir-meow |
+| `Ctrl-O` | Switch between Atuin and eza preview |
+| `Alt-U` | Toggle hidden files in eza preview |
+| `Enter` | `cd` to the selected directory |
+| `Esc` | Cancel |
+
+`Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O`.
+
 ## Configuration
 
-Environment variables have highest priority:
-
-```zsh
-export MEOW_ICONS=true
-export MEOW_TREE=true
-export MEOW_LEVEL=2
-export MEOW_HIDDEN=true
-```
-
-For each unset environment variable, dir-meow falls back to the corresponding value in the XDG config file:
+The config file is located at:
 
 ```text
 ${XDG_CONFIG_HOME:-$HOME/.config}/dir-meow/config
 ```
 
-If `XDG_CONFIG_HOME` is unset, empty, or not an absolute path, dir-meow falls back to `$HOME/.config`.
+If `XDG_CONFIG_HOME` is unset, empty, or not an absolute path, dir-meow uses `$HOME/.config`.
 
-The config directory and file are created automatically on the first dir-meow invocation if they do not already exist. The generated file contains the built-in defaults; environment-variable overrides are not written into it.
-
-The config file is a small plain-text `key=value` file and is **not** sourced as shell code:
+The config directory and file are created automatically on the first dir-meow invocation. The generated file contains the built-in defaults:
 
 ```text
 icons=true
@@ -64,53 +73,50 @@ level=2
 hidden=true
 ```
 
-Blank lines and `#` comments are allowed.
+The file uses a small `key=value` format and is **not** sourced as shell code. Blank lines and `#` comments are allowed.
 
-Precedence is evaluated per option:
-
-```text
-environment -> config file -> built-in default
-```
-
-This means you can keep most settings in the file and override only one from the environment. For example, with:
-
-```text
-icons=true
-tree=true
-level=2
-hidden=true
-```
-
-and:
-
-```zsh
-export MEOW_LEVEL=4
-```
-
-only `level` is overridden.
-
-Options:
+### Options
 
 | Config key | Environment variable | Type | Default | Effect |
 | --- | --- | --- | --- | --- |
 | `icons` | `MEOW_ICONS` | boolean | `true` | Add `--icons=always` to the eza preview |
 | `tree` | `MEOW_TREE` | boolean | `true` | Add `--tree` to the eza preview |
-| `level` | `MEOW_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; ignored when `tree = false` |
-| `hidden` | `MEOW_HIDDEN` | boolean | `true` | Initial hidden-file visibility for each dir-meow invocation |
+| `level` | `MEOW_LEVEL` | positive integer | `2` | Tree depth passed as `--level=N`; used only when `tree=true` |
+| `hidden` | `MEOW_HIDDEN` | boolean | `true` | Initial hidden-file visibility for each invocation |
 
-The eza preview shows names only, using `--oneline --group-directories-first --color=always` plus the configured icon/tree options. When hidden files are enabled, `--all` is added.
+Environment variables override the corresponding config-file values individually:
 
-`Alt-U` changes hidden-file visibility only for the current dir-meow invocation. It works only while the eza preview is active; in Atuin mode it is a no-op and does not switch preview providers. The hidden state is preserved when switching between Atuin and eza with `Ctrl-O`.
+```text
+environment variable -> config file -> built-in default
+```
 
-## How the Atuin preview is scoped
+For example:
 
-For every selected directory, dir-meow runs Atuin from that directory with both session and cwd filters:
+```zsh
+export MEOW_LEVEL=4
+```
+
+only overrides `level`; the remaining options still come from the config file or built-in defaults.
+
+The eza preview always uses:
+
+```text
+--oneline --group-directories-first --color=always
+```
+
+Depending on the configuration and current hidden-file state, dir-meow additionally uses `--icons=always`, `--tree`, `--level=N`, and `--all`.
+
+## Atuin preview
+
+For each selected directory, dir-meow runs:
 
 ```zsh
 atuin history list --session --cwd --cmd-only
 ```
 
-So the preview contains commands executed in **the current Atuin session AND the selected directory**.
+from that directory. The preview therefore shows commands from the current Atuin session whose working directory matches the selected directory.
+
+If `ATUIN_SESSION` is not set, the Atuin preview displays an explanatory message instead.
 
 ## Directory ordering
 
@@ -120,4 +126,4 @@ Candidates come from:
 dirs -pl
 ```
 
-That means the current directory is first, followed by the Zsh directory stack. Duplicate paths are removed while preserving stack order, and fzf uses `--no-sort` so fuzzy searching does not replace the stack's recency ordering.
+The current directory appears first, followed by the Zsh directory stack. Duplicate paths are removed while preserving their first occurrence, and fzf runs with `--no-sort` so the directory-stack order remains intact.
