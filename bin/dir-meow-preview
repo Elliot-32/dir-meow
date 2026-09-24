@@ -247,10 +247,10 @@ _dir_meow_preview_atuin() {
     builtin cd -- "$dir" || return
 
     if [[ -n $bat_cmd ]]; then
-      command atuin history list --session --cwd --cmd-only |
+      command atuin history list --session --cwd --cmd-only --reverse=false |
         "$bat_cmd" --color=always --style=plain --paging=never --language=zsh
     else
-      command atuin history list --session --cwd --cmd-only
+      command atuin history list --session --cwd --cmd-only --reverse=false
     fi
   )
 }

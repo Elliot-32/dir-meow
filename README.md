@@ -119,10 +119,10 @@ Depending on the configuration and current hidden-file state, dir-meow additiona
 
 ## Atuin preview
 
-For each selected directory, dir-meow runs Atuin from that directory. When bat is available, the history is syntax-highlighted as Zsh with decorations and paging disabled:
+For each selected directory, dir-meow runs Atuin from that directory, with the most recently executed command first. When bat is available, the history is syntax-highlighted as Zsh with decorations and paging disabled:
 
 ```zsh
-atuin history list --session --cwd --cmd-only | \
+atuin history list --session --cwd --cmd-only --reverse=false | \
   bat --color=always --style=plain --paging=never --language=zsh
 ```
 
