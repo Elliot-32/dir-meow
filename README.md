@@ -6,7 +6,7 @@ A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and 
 
 ## Features
 
-- Browse the current directory and Zsh directory stack with `fzf`
+- Browse the current directory and Zsh directory stack with a rounded, sectioned `fzf` interface
 - Preserve directory-stack order instead of re-sorting candidates by fuzzy-match score
 - Switch the preview between Atuin command history and eza directory contents
 - Syntax-highlight Atuin command history with bat when available
@@ -19,7 +19,7 @@ A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and 
 Required:
 
 - Zsh
-- fzf 0.37+ (`transform-preview-label` is used)
+- fzf 0.63+ (modern section styling and footer support are used)
 
 Optional preview tools:
 
@@ -28,6 +28,8 @@ Optional preview tools:
 - bat (or `batcat` on Debian/Ubuntu) for Atuin history syntax highlighting
 
 If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If bat is not installed, Atuin history is shown without syntax highlighting.
+
+A Nerd Font is recommended for the interface icons. dir-meow does not hard-code a color palette, so your terminal and existing `FZF_DEFAULT_OPTS` color settings remain in control.
 
 ## Installation
 
@@ -55,6 +57,8 @@ source /path/to/dir-meow/dir-meow.plugin.zsh
 | `Esc` | Cancel |
 
 `Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O`.
+
+The interface uses separate rounded input, directory-list, preview, and controls sections. `Ctrl-O` also updates the preview label between Atuin history and eza state.
 
 ## Configuration
 
