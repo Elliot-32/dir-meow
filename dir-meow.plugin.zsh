@@ -82,17 +82,24 @@ _dir_meow_widget() {
 
   rm -f -- "$source_file" "$state_file"
 
-  (( tv_status == 0 )) || {
+  # Television also returns success with empty output when cancelled.
+  (( tv_status == 0 )) && [[ -n $selected ]] || {
     zle reset-prompt
     return 0
   }
 
-  [[ -n $selected && $selected != *$'\n'* && -d $selected ]] || {
+  [[ $selected != *$'\n'* && -d $selected ]] || {
     zle -M 'dir-meow: selected directory no longer exists'
     return 1
   }
 
   builtin cd -- "$selected" || return 1
+  # reset-prompt only redraws the existing prompt. Themes such as Powerlevel10k
+  # calculate directory segments in precmd, so refresh those before redrawing.
+  local hook
+  for hook in precmd "${precmd_functions[@]}"; do
+    (( $+functions[$hook] )) && "$hook"
+  done
   zle reset-prompt
 }
 

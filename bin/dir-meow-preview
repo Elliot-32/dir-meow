@@ -295,6 +295,32 @@ _dir_meow_preview_eza() {
 }
 
 case ${1:-} in
+  source)
+    (( $# == 2 )) || exit 2
+    integer index=0
+    while IFS= read -r dir; do
+      (( ++index ))
+      printf '%s:%s\t%s\n' "$$" "$index" "$dir"
+    done < "$2"
+    ;;
+  preview)
+    (( $# == 4 )) || exit 2
+    # Resolve the path from the original source file without evaluating it as
+    # shell code. The process ID prefix makes each reload's cache key unique.
+    token=$4
+    [[ $token == <1->:<1-> ]] || exit 2
+    integer wanted=${token#*:} index=0
+    while IFS= read -r dir; do
+      (( ++index == wanted )) || continue
+      if [[ $(_dir_meow_mode "$2") == eza ]]; then
+        _dir_meow_preview_eza "$2" "$dir"
+      else
+        _dir_meow_preview_atuin "$dir"
+      fi
+      exit $?
+    done < "$3"
+    exit 1
+    ;;
   preview-atuin)
     (( $# == 2 )) || exit 2
     _dir_meow_preview_atuin "$2"
@@ -321,7 +347,7 @@ case ${1:-} in
     print -r -- "$config[4]"
     ;;
   *)
-    print -u2 -r -- 'usage: dir-meow-preview {preview-atuin|preview-eza|toggle-mode|toggle-hidden|hidden-default} ...'
+    print -u2 -r -- 'usage: dir-meow-preview {source|preview|preview-atuin|preview-eza|toggle-mode|toggle-hidden|hidden-default} ...'
     exit 2
     ;;
 esac

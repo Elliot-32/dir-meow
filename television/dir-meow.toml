@@ -3,16 +3,17 @@ name = "dir-meow"
 description = "Browse the current Zsh directory stack"
 
 [source]
-command = 'command cat -- "$DIR_MEOW_SOURCE_FILE"'
+# A new source process ID invalidates Television 0.15's preview cache on reload.
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" source "$DIR_MEOW_SOURCE_FILE"'
+display = '{split:\t:1..|join:\t}'
+output = '{split:\t:1..|join:\t}'
 shell = "zsh"
 no_sort = true
 frecency = false
 
 [preview]
-command = [
-  'zsh "$DIR_MEOW_PREVIEW_HELPER" preview-atuin "{}"',
-  'zsh "$DIR_MEOW_PREVIEW_HELPER" preview-eza "$DIR_MEOW_STATE_FILE" "{}"',
-]
+# Pass only our numeric token through shell interpolation, never the path.
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" "$DIR_MEOW_SOURCE_FILE" {split:\t:0}'
 shell = "zsh"
 cached = false
 
@@ -52,8 +53,8 @@ disabled = false
 disabled = true
 
 [keybindings]
-ctrl-o = ["cycle_previews", "actions:toggle-mode"]
-ctrl-f = ["cycle_previews", "actions:toggle-mode"]
+ctrl-o = ["actions:toggle-mode", "reload_source"]
+ctrl-f = ["actions:toggle-mode", "reload_source"]
 alt-u = ["actions:toggle-hidden", "reload_source"]
 tab = "select_next_entry"
 backtab = "select_prev_entry"

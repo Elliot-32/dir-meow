@@ -57,9 +57,13 @@ source /path/to/dir-meow/dir-meow.plugin.zsh
 | `Enter` | `cd` to the selected directory |
 | `Esc` | Cancel |
 
+After a selection, prompt hooks are refreshed so themes such as Powerlevel10k show the new directory immediately.
+
+The initial preview is Atuin. `Esc` cancels without changing directory or showing an error.
+
 `Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O` or `Ctrl-F`.
 
-The interface uses Television's rounded input, results, preview, status, and help components. `Ctrl-O` switches between the Atuin and eza preview commands; `Ctrl-F` is mapped to the same action.
+The interface uses Television's rounded input, results, preview, status, and help components. `Ctrl-O` switches between the Atuin and eza previews; `Ctrl-F` is mapped to the same action.
 
 ## Configuration
 
