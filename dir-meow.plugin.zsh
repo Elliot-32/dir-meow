@@ -71,9 +71,10 @@ _dir_meow_widget() {
 
   # Television source, preview, and action subprocesses inherit these scoped
   # variables. The bundled channel consumes them without touching user config.
+  local preview_helper=$DIR_MEOW_PREVIEW_HELPER
   local -x DIR_MEOW_SOURCE_FILE=$source_file
   local -x DIR_MEOW_STATE_FILE=$state_file
-  local -x DIR_MEOW_PREVIEW_HELPER=$DIR_MEOW_PREVIEW_HELPER
+  local -x DIR_MEOW_PREVIEW_HELPER=$preview_helper
 
   local selected tv_status
   selected=$(command tv --cable-dir "$DIR_MEOW_CABLE_DIR" dir-meow)
