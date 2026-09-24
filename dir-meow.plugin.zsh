@@ -64,10 +64,7 @@ _dir_meow_widget() {
     return 1
   }
 
-  {
-    print -r -- 'mode=atuin'
-    print -r -- "hidden=$hidden_default"
-  } >| "$state_file"
+  print -r -- "hidden=$hidden_default" >| "$state_file"
 
   # Television source, preview, and action subprocesses inherit these scoped
   # variables. The bundled channel consumes them without touching user config.
