@@ -27,7 +27,7 @@ class TelevisionTests(unittest.TestCase):
                 target = path / "directory with spaces ' \" $HOME `false`\ttab"
                 target.mkdir()
                 (path / 'source').write_text(directory + '\n' + str(target) + '\n')
-                (path / 'state').write_text('mode=atuin\nhidden=true\n')
+                (path / 'state').write_text('hidden=true\n')
                 binaries = path / 'bin'
                 binaries.mkdir()
                 for name, body in {
@@ -77,23 +77,27 @@ class TelevisionTests(unittest.TestCase):
                     self.assertIn('atuin', log())
                     self.assertIn('● ○'.encode(), screen)
                     press(b'\x1b[B')
-                    press(b'\x1bu')  # Alt-U in Atuin must not change hidden state.
-                    self.assertIn('hidden=true', (path / 'state').read_text())
-                    press(b'\x0f')  # Ctrl-O: eza.
-                    self.assertIn('--all', log()[-1])
+                    press(b'\x1bh')  # Alt-H updates eza state even while Atuin is active.
+                    self.assertIn('hidden=false', (path / 'state').read_text())
+                    self.assertEqual(log()[-1], 'atuin')
+                    press(b'\x06')  # Ctrl-F: eza via Television's native cycle_previews.
+                    self.assertNotIn('--all', log()[-1])
                     self.assertIn('○ ●'.encode(), screen)
+                    self.assertIn(str(target), log()[-1])
                     count = len(log())
-                    press(b'\x1bu')  # Refresh the SAME selected directory.
+                    press(b'\x1bh')  # Refresh the SAME selected directory with hidden files.
                     self.assertGreater(len(log()), count)
                     self.assertTrue(log()[-1].startswith('eza '))
-                    self.assertNotIn('--all', log()[-1])
-                    self.assertIn(str(target), log()[-1])
+                    self.assertIn('--all', log()[-1])
+                    press(b'\x0f')  # Ctrl-O only hides the preview; it must not cycle providers.
+                    press(b'\x0f')  # Show the same eza preview again.
+                    self.assertTrue(log()[-1].startswith('eza '))
                     press(b'\x06')  # Ctrl-F: Atuin.
                     self.assertEqual(log()[-1], 'atuin')
-                    press(b'\x0f')  # Back to eza preserves hidden=false.
-                    self.assertNotIn('--all', log()[-1])
-                    press(b'\x1bu')
+                    press(b'\x06')  # Back to eza preserves hidden=true.
                     self.assertIn('--all', log()[-1])
+                    press(b'\x1bh')
+                    self.assertNotIn('--all', log()[-1])
                     press(b'\x1b' if cancel else b'\r')
                     deadline = time.monotonic() + 3
                     while True:

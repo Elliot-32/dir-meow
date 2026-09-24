@@ -186,12 +186,6 @@ _dir_meow_state_set() {
   command mv -f -- "$tmp_file" "$state_file"
 }
 
-_dir_meow_mode() {
-  local mode=$(_dir_meow_state_get "$1" mode atuin)
-  [[ $mode == eza ]] || mode=atuin
-  print -r -- "$mode"
-}
-
 _dir_meow_hidden() {
   local hidden=$(_dir_meow_state_get "$1" hidden true)
   [[ $hidden == false ]] || hidden=true
@@ -201,10 +195,9 @@ _dir_meow_hidden() {
 _dir_meow_toggle_hidden() {
   local state_file=$1
 
-  # Keep Alt-U compatible with the fzf implementation: toggling hidden files
-  # only changes state while the eza preview is active.
-  [[ $(_dir_meow_mode "$state_file") == eza ]] || return 0
-
+  # Hidden-file state belongs to the eza preview, but toggling it does not need
+  # to know which native Television preview is currently active. This avoids a
+  # race between cycle_previews and the asynchronous preview subprocess.
   if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
     _dir_meow_state_set "$state_file" hidden false
   else
@@ -303,9 +296,6 @@ case ${1:-} in
     integer wanted=${token#*:} index=0
     while IFS= read -r dir; do
       (( ++index == wanted )) || continue
-      # The native preview command is authoritative. Record its provider so
-      # Alt-U remains a no-op in Atuin, without a second mode toggle to sync.
-      _dir_meow_state_set "$2" mode "$mode" || exit 1
       if [[ $mode == eza ]]; then
         _dir_meow_preview_eza "$2" "$dir"
       else
