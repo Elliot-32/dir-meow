@@ -9,6 +9,7 @@ A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and 
 - Browse the current directory and Zsh directory stack with `fzf`
 - Preserve directory-stack order instead of re-sorting candidates by fuzzy-match score
 - Switch the preview between Atuin command history and eza directory contents
+- Syntax-highlight Atuin command history with bat when available
 - Toggle hidden files while using the eza preview
 - Configure eza preview behavior through an XDG config file or environment variables
 - Automatically create the default config file on first use
@@ -20,12 +21,13 @@ Required:
 - Zsh
 - fzf 0.37+ (`transform-preview-label` is used)
 
-Optional preview providers:
+Optional preview tools:
 
 - Atuin
 - eza
+- bat (syntax highlighting for Atuin history)
 
-If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works.
+If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If bat is not installed, Atuin history is shown without syntax highlighting.
 
 ## Installation
 
@@ -108,13 +110,14 @@ Depending on the configuration and current hidden-file state, dir-meow additiona
 
 ## Atuin preview
 
-For each selected directory, dir-meow runs:
+For each selected directory, dir-meow runs Atuin from that directory. When bat is available, the history is syntax-highlighted as Zsh with decorations and paging disabled:
 
 ```zsh
-atuin history list --session --cwd --cmd-only
+atuin history list --session --cwd --cmd-only | \
+  bat --color=always --style=plain --paging=never --language=zsh
 ```
 
-from that directory. The preview therefore shows commands from the current Atuin session whose working directory matches the selected directory.
+Without bat, dir-meow falls back to the plain Atuin output. The preview therefore shows commands from the current Atuin session whose working directory matches the selected directory.
 
 If `ATUIN_SESSION` is not set, the Atuin preview displays an explanatory message instead.
 
