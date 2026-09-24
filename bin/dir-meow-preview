@@ -255,7 +255,13 @@ _dir_meow_preview_atuin() {
 
   (
     builtin cd -- "$dir" || return
-    command atuin history list --session --cwd --cmd-only
+
+    if (( $+commands[bat] )); then
+      command atuin history list --session --cwd --cmd-only |
+        command bat --color=always --style=plain --paging=never --language=zsh
+    else
+      command atuin history list --session --cwd --cmd-only
+    fi
   )
 }
 
