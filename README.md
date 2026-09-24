@@ -25,7 +25,7 @@ Optional preview tools:
 
 - Atuin
 - eza
-- bat (syntax highlighting for Atuin history)
+- bat (or `batcat` on Debian/Ubuntu) for Atuin history syntax highlighting
 
 If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If bat is not installed, Atuin history is shown without syntax highlighting.
 
@@ -117,7 +117,7 @@ atuin history list --session --cwd --cmd-only | \
   bat --color=always --style=plain --paging=never --language=zsh
 ```
 
-Without bat, dir-meow falls back to the plain Atuin output. The preview therefore shows commands from the current Atuin session whose working directory matches the selected directory.
+dir-meow also detects the `batcat` executable used by Debian and Ubuntu packages. Without either `bat` or `batcat`, it falls back to the plain Atuin output. The preview therefore shows commands from the current Atuin session whose working directory matches the selected directory.
 
 If `ATUIN_SESSION` is not set, the Atuin preview displays an explanatory message instead.
 
