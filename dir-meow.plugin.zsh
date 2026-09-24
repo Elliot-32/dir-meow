@@ -1,4 +1,4 @@
-# dir-meow: directory-stack navigator for Zsh, powered by fzf.
+# dir-meow: directory-stack navigator for Zsh, powered by Television.
 
 # Record ordinary `cd` navigation in Zsh's directory stack. Respect the user's
 # existing DIRSTACKSIZE and other pushd options.
@@ -6,31 +6,18 @@ setopt AUTO_PUSHD
 
 [[ -o interactive ]] || return 0
 
-# Resolve this file once so the preview helper works regardless of cwd or how
-# the plugin was loaded (source, Sheldon, etc.). Keep these writable so sourcing
-# the plugin again is harmless.
+# Resolve plugin resources once so the bundled Television channel and preview
+# helper work regardless of cwd or how the plugin was loaded.
 typeset -g DIR_MEOW_ROOT=${${(%):-%N}:A:h}
 typeset -g DIR_MEOW_PREVIEW_HELPER="$DIR_MEOW_ROOT/bin/dir-meow-preview"
+typeset -g DIR_MEOW_CABLE_DIR="$DIR_MEOW_ROOT/television"
 
 _dir_meow_widget() {
   emulate -L zsh
   setopt localoptions pipefail auto_pushd
 
-  if (( ! $+commands[fzf] )); then
-    zle -M 'dir-meow: fzf 0.63+ is required'
-    return 1
-  fi
-
-  local fzf_version
-  fzf_version=$(command fzf --version 2>/dev/null)
-  fzf_version=${fzf_version%% *}
-  local -a fzf_version_parts
-  fzf_version_parts=(${(s:.:)fzf_version})
-
-  if (( ${#fzf_version_parts} < 2 )) ||
-     [[ $fzf_version_parts[1] != <-> || $fzf_version_parts[2] != <-> ]] ||
-     (( fzf_version_parts[1] == 0 && fzf_version_parts[2] < 63 )); then
-    zle -M "dir-meow: fzf 0.63+ is required (found ${fzf_version:-unknown})"
+  if (( ! $+commands[tv] )); then
+    zle -M 'dir-meow: Television (tv) 0.15+ is required'
     return 1
   fi
 
@@ -52,15 +39,27 @@ _dir_meow_widget() {
     return 1
   fi
 
-  local state_file
-  state_file=$(mktemp "${TMPDIR:-/tmp}/dir-meow.XXXXXXXX") || {
+  local source_file state_file
+  source_file=$(mktemp "${TMPDIR:-/tmp}/dir-meow-source.XXXXXXXX") || {
+    zle -M 'dir-meow: failed to create temporary source file'
+    return 1
+  }
+
+  state_file=$(mktemp "${TMPDIR:-/tmp}/dir-meow-state.XXXXXXXX") || {
+    rm -f -- "$source_file"
     zle -M 'dir-meow: failed to create temporary state file'
+    return 1
+  }
+
+  printf '%s\n' "${candidates[@]}" >| "$source_file" || {
+    rm -f -- "$source_file" "$state_file"
+    zle -M 'dir-meow: failed to write directory candidates'
     return 1
   }
 
   local hidden_default
   hidden_default=$(zsh "$DIR_MEOW_PREVIEW_HELPER" hidden-default) || {
-    rm -f -- "$state_file"
+    rm -f -- "$source_file" "$state_file"
     zle -M "${hidden_default:-dir-meow: failed to read configuration}"
     return 1
   }
@@ -70,50 +69,24 @@ _dir_meow_widget() {
     print -r -- "hidden=$hidden_default"
   } >| "$state_file"
 
-  # fzf preview subprocesses inherit these scoped variables, avoiding fragile
-  # quoting of plugin paths and the temporary state file inside action strings.
-  local preview_helper=$DIR_MEOW_PREVIEW_HELPER
-  local -x DIR_MEOW_PREVIEW_HELPER=$preview_helper
+  # Television source, preview, and action subprocesses inherit these scoped
+  # variables. The bundled channel consumes them without touching user config.
+  local -x DIR_MEOW_SOURCE_FILE=$source_file
   local -x DIR_MEOW_STATE_FILE=$state_file
+  local -x DIR_MEOW_PREVIEW_HELPER=$DIR_MEOW_PREVIEW_HELPER
 
-  local selected fzf_status
-  selected=$(
-    printf '%s\n' "${candidates[@]}" |
-      fzf \
-        --no-sort \
-        --scheme=path \
-        --layout=reverse \
-        --style=full:rounded \
-        --padding=1 \
-        --gap=1 \
-        --prompt='› ' \
-        --pointer='▸ ' \
-        --scrollbar='┃' \
-        --info=inline-right \
-        --input-border=rounded \
-        --input-label='  Search ' \
-        --list-border=rounded \
-        --list-label=' 󰉋 Directories ' \
-        --preview='zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" {}' \
-        --preview-border=rounded \
-        --preview-label='  Atuin history ' \
-        --preview-window='right:60%:wrap' \
-        --footer=' Ctrl-O  Preview  ·  Alt-U  Hidden  ·  Enter  Open  ·  Esc  Close ' \
-        --footer-border=rounded \
-        --footer-label=' Controls ' \
-        --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")' \
-        --bind='alt-u:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
-  )
-  fzf_status=$?
+  local selected tv_status
+  selected=$(command tv --cable-dir "$DIR_MEOW_CABLE_DIR" dir-meow)
+  tv_status=$?
 
-  rm -f -- "$state_file"
+  rm -f -- "$source_file" "$state_file"
 
-  (( fzf_status == 0 )) || {
+  (( tv_status == 0 )) || {
     zle reset-prompt
     return 0
   }
 
-  [[ -n $selected && -d $selected ]] || {
+  [[ -n $selected && $selected != *$'\n'* && -d $selected ]] || {
     zle -M 'dir-meow: selected directory no longer exists'
     return 1
   }
