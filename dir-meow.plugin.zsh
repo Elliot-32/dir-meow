@@ -17,7 +17,20 @@ _dir_meow_widget() {
   setopt localoptions pipefail auto_pushd
 
   if (( ! $+commands[fzf] )); then
-    zle -M 'dir-meow: fzf is required'
+    zle -M 'dir-meow: fzf 0.63+ is required'
+    return 1
+  fi
+
+  local fzf_version
+  fzf_version=$(command fzf --version 2>/dev/null)
+  fzf_version=${fzf_version%% *}
+  local -a fzf_version_parts
+  fzf_version_parts=(${(s:.:)fzf_version})
+
+  if (( ${#fzf_version_parts} < 2 )) ||
+     [[ $fzf_version_parts[1] != <-> || $fzf_version_parts[2] != <-> ]] ||
+     (( fzf_version_parts[1] == 0 && fzf_version_parts[2] < 63 )); then
+    zle -M "dir-meow: fzf 0.63+ is required (found ${fzf_version:-unknown})"
     return 1
   fi
 
@@ -70,12 +83,24 @@ _dir_meow_widget() {
         --no-sort \
         --scheme=path \
         --layout=reverse \
-        --border \
-        --prompt='dir> ' \
-        --header='Ctrl-O: Atuin/eza · Alt-U: hidden (eza only) · Enter: cd · Esc: cancel' \
+        --style=full:rounded \
+        --padding=1 \
+        --gap=1 \
+        --prompt='› ' \
+        --pointer='▸ ' \
+        --scrollbar='┃' \
+        --info=inline-right \
+        --input-border=rounded \
+        --input-label='  Search ' \
+        --list-border=rounded \
+        --list-label=' 󰉋 Directories ' \
         --preview='zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" {}' \
-        --preview-label=' Atuin ' \
+        --preview-border=rounded \
+        --preview-label='  Atuin history ' \
         --preview-window='right:60%:wrap' \
+        --footer=' Ctrl-O  Preview  ·  Alt-U  Hidden  ·  Enter  Open  ·  Esc  Close ' \
+        --footer-border=rounded \
+        --footer-label=' Controls ' \
         --bind='ctrl-o:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")' \
         --bind='alt-u:execute-silent(zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE")+refresh-preview+transform-preview-label(zsh "$DIR_MEOW_PREVIEW_HELPER" label "$DIR_MEOW_STATE_FILE")'
   )
