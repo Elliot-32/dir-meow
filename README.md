@@ -10,7 +10,7 @@ A small Zsh directory-stack navigator powered by [Television (`tv`)](https://git
 - Preserve directory-stack order instead of re-sorting candidates by fuzzy-match score
 - Switch the preview between Atuin command history and eza directory contents
 - Syntax-highlight Atuin command history with bat when available
-- Toggle hidden files while using the eza preview
+- Toggle hidden files for the eza preview
 - Configure eza preview behavior through an XDG config file or environment variables
 - Automatically create the default config file on first use
 
