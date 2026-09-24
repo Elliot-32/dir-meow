@@ -38,7 +38,7 @@ padding = { left = 1, right = 1 }
 [ui.preview_panel]
 size = 60
 header = " Preview "
-footer = " Ctrl-O Preview · Alt-U Hidden "
+footer = " Ctrl-F Preview · Alt-H Hidden "
 scrollbar = true
 border_type = "rounded"
 padding = { left = 1, right = 1 }
@@ -56,14 +56,12 @@ disabled = false
 disabled = true
 
 [keybindings]
-ctrl-o = ["cycle_previews", "reload_source"]
-ctrl-f = ["cycle_previews", "reload_source"]
-alt-u = ["actions:toggle-hidden", "reload_source"]
+alt-h = ["actions:toggle-hidden", "reload_source"]
 tab = "select_next_entry"
 backtab = "select_prev_entry"
 
 [actions.toggle-hidden]
-description = "Toggle hidden files in the eza preview"
+description = "Toggle hidden files for the eza preview"
 command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE"'
 shell = "zsh"
 mode = "fork"
