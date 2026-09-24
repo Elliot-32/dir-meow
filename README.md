@@ -27,7 +27,7 @@ Optional preview tools:
 - eza
 - bat (or `batcat` on Debian/Ubuntu) for Atuin history syntax highlighting
 
-If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If bat is not installed, Atuin history is shown without syntax highlighting.
+If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If neither `bat` nor `batcat` is installed, Atuin history is shown without syntax highlighting.
 
 A Nerd Font is recommended for the interface icons. dir-meow does not hard-code a color palette, so your terminal and existing `FZF_DEFAULT_OPTS` color settings remain in control.
 
