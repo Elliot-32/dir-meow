@@ -22,7 +22,8 @@ _dir_meow_widget() {
   fi
 
   local fzf_version
-  fzf_version=${"$(command fzf --version 2>/dev/null)"%% *}
+  fzf_version=$(command fzf --version 2>/dev/null)
+  fzf_version=${fzf_version%% *}
   local -a fzf_version_parts
   fzf_version_parts=(${(s:.:)fzf_version})
 
