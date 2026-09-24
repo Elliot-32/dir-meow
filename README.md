@@ -55,7 +55,6 @@ source /path/to/dir-meow/dir-meow.plugin.zsh
 | `Alt-H` | Toggle hidden files used by the eza preview |
 | `Ctrl-O` | Show or hide the preview panel |
 | `Ctrl-H` | Toggle Television help |
-| `Ctrl-X` | Open Television's action picker |
 | `Enter` | `cd` to the selected directory |
 | `Esc` | Cancel |
 
@@ -65,7 +64,7 @@ The initial preview is Atuin. `Esc` cancels without changing directory or showin
 
 `Alt-H` toggles the hidden-file state used by the eza preview. If Atuin is currently active, the change becomes visible the next time you switch to eza. The hidden-file state is preserved while switching previews with `Ctrl-F`.
 
-The interface uses Television's rounded input, results, preview, status, and help components. Television’s native arrows and dots indicate the active preview. `Ctrl-F` keeps Television's native `cycle_previews` behavior, while `Ctrl-O`, `Ctrl-H`, and `Ctrl-X` retain their native preview, help, and action-picker controls.
+The interface uses Television's rounded input, results, preview, status, and help components. Television’s native arrows and dots indicate the active preview. `Ctrl-F` keeps Television's native `cycle_previews` behavior, while `Ctrl-O` and `Ctrl-H` retain their native preview and help controls. `Ctrl-X` is intentionally disabled for this channel because Television's action picker cannot execute the hidden toggle together with its required preview reload.
 
 ## Configuration
 
