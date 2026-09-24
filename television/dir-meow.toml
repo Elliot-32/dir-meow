@@ -56,6 +56,9 @@ disabled = false
 disabled = true
 
 [keybindings]
+# The action picker would execute toggle-hidden without the paired reload_source,
+# leaving the preview stale. Keep the composite action on Alt-H only.
+ctrl-x = "no_op"
 alt-h = ["actions:toggle-hidden", "reload_source"]
 tab = "select_next_entry"
 backtab = "select_prev_entry"
