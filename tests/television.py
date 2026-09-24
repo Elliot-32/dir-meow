@@ -51,6 +51,8 @@ class TelevisionTests(unittest.TestCase):
                     os.dup2(os.open(path / 'out', os.O_CREAT | os.O_WRONLY, 0o600), 1)
                     os.execv(TV, [TV, '--cable-dir', str(ROOT / 'television'), 'dir-meow'])
 
+                screen = bytearray()
+
                 def pump(seconds=0.6):
                     deadline = time.monotonic() + seconds
                     while time.monotonic() < deadline:
@@ -59,6 +61,7 @@ class TelevisionTests(unittest.TestCase):
                                 output = os.read(fd, 65536)
                             except OSError:
                                 return
+                            screen.extend(output)
                             if b'\x1b[6n' in output:
                                 os.write(fd, b'\x1b[1;1R')
 
@@ -72,11 +75,13 @@ class TelevisionTests(unittest.TestCase):
                 try:
                     pump()
                     self.assertIn('atuin', log())
+                    self.assertIn('● ○'.encode(), screen)
                     press(b'\x1b[B')
                     press(b'\x1bu')  # Alt-U in Atuin must not change hidden state.
                     self.assertIn('hidden=true', (path / 'state').read_text())
                     press(b'\x0f')  # Ctrl-O: eza.
                     self.assertIn('--all', log()[-1])
+                    self.assertIn('○ ●'.encode(), screen)
                     count = len(log())
                     press(b'\x1bu')  # Refresh the SAME selected directory.
                     self.assertGreater(len(log()), count)

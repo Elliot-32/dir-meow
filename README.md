@@ -63,7 +63,7 @@ The initial preview is Atuin. `Esc` cancels without changing directory or showin
 
 `Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O` or `Ctrl-F`.
 
-The interface uses Television's rounded input, results, preview, status, and help components. `Ctrl-O` switches between the Atuin and eza previews; `Ctrl-F` is mapped to the same action.
+The interface uses Television's rounded input, results, preview, status, and help components. Television’s native arrows and dots indicate the active preview. `Ctrl-O` switches between the Atuin and eza previews; `Ctrl-F` is mapped to the same action.
 
 ## Configuration
 

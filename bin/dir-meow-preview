@@ -198,17 +198,6 @@ _dir_meow_hidden() {
   print -r -- "$hidden"
 }
 
-_dir_meow_toggle_mode() {
-  local state_file=$1
-  local mode=$(_dir_meow_mode "$state_file")
-
-  if [[ $mode == atuin ]]; then
-    _dir_meow_state_set "$state_file" mode eza
-  else
-    _dir_meow_state_set "$state_file" mode atuin
-  fi
-}
-
 _dir_meow_toggle_hidden() {
   local state_file=$1
 
@@ -304,7 +293,9 @@ case ${1:-} in
     done < "$2"
     ;;
   preview)
-    (( $# == 4 )) || exit 2
+    (( $# == 5 )) || exit 2
+    mode=$5
+    [[ $mode == atuin || $mode == eza ]] || exit 2
     # Resolve the path from the original source file without evaluating it as
     # shell code. The process ID prefix makes each reload's cache key unique.
     token=$4
@@ -312,7 +303,10 @@ case ${1:-} in
     integer wanted=${token#*:} index=0
     while IFS= read -r dir; do
       (( ++index == wanted )) || continue
-      if [[ $(_dir_meow_mode "$2") == eza ]]; then
+      # The native preview command is authoritative. Record its provider so
+      # Alt-U remains a no-op in Atuin, without a second mode toggle to sync.
+      _dir_meow_state_set "$2" mode "$mode" || exit 1
+      if [[ $mode == eza ]]; then
         _dir_meow_preview_eza "$2" "$dir"
       else
         _dir_meow_preview_atuin "$dir"
@@ -329,10 +323,6 @@ case ${1:-} in
     (( $# == 3 )) || exit 2
     _dir_meow_preview_eza "$2" "$3"
     ;;
-  toggle-mode)
-    (( $# == 2 )) || exit 2
-    _dir_meow_toggle_mode "$2"
-    ;;
   toggle-hidden)
     (( $# == 2 )) || exit 2
     _dir_meow_toggle_hidden "$2"
@@ -347,7 +337,7 @@ case ${1:-} in
     print -r -- "$config[4]"
     ;;
   *)
-    print -u2 -r -- 'usage: dir-meow-preview {source|preview|preview-atuin|preview-eza|toggle-mode|toggle-hidden|hidden-default} ...'
+    print -u2 -r -- 'usage: dir-meow-preview {source|preview|preview-atuin|preview-eza|toggle-hidden|hidden-default} ...'
     exit 2
     ;;
 esac

@@ -13,7 +13,10 @@ frecency = false
 
 [preview]
 # Pass only our numeric token through shell interpolation, never the path.
-command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" "$DIR_MEOW_SOURCE_FILE" {split:\t:0}'
+command = [
+  'zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" "$DIR_MEOW_SOURCE_FILE" {split:\t:0} atuin',
+  'zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" "$DIR_MEOW_SOURCE_FILE" {split:\t:0} eza',
+]
 shell = "zsh"
 cached = false
 
@@ -53,17 +56,11 @@ disabled = false
 disabled = true
 
 [keybindings]
-ctrl-o = ["actions:toggle-mode", "reload_source"]
-ctrl-f = ["actions:toggle-mode", "reload_source"]
+ctrl-o = ["cycle_previews", "reload_source"]
+ctrl-f = ["cycle_previews", "reload_source"]
 alt-u = ["actions:toggle-hidden", "reload_source"]
 tab = "select_next_entry"
 backtab = "select_prev_entry"
-
-[actions.toggle-mode]
-description = "Synchronize the active preview mode"
-command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE"'
-shell = "zsh"
-mode = "fork"
 
 [actions.toggle-hidden]
 description = "Toggle hidden files in the eza preview"
