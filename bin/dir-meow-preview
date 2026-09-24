@@ -229,13 +229,13 @@ _dir_meow_label() {
   case $(_dir_meow_mode "$state_file") in
     eza)
       if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
-        print -r -- ' eza [hidden] '
+        print -r -- ' 󰉋 eza · hidden '
       else
-        print -r -- ' eza '
+        print -r -- ' 󰉋 eza '
       fi
       ;;
     atuin)
-      print -r -- ' Atuin '
+      print -r -- '  Atuin history '
       ;;
   esac
 }
