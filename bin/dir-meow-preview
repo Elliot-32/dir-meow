@@ -212,8 +212,8 @@ _dir_meow_toggle_mode() {
 _dir_meow_toggle_hidden() {
   local state_file=$1
 
-  # Hidden-file toggling belongs to the eza preview only. In Atuin mode this is
-  # deliberately a no-op and never switches preview providers.
+  # Keep Alt-U compatible with the fzf implementation: toggling hidden files
+  # only changes state while the eza preview is active.
   [[ $(_dir_meow_mode "$state_file") == eza ]] || return 0
 
   if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
@@ -221,23 +221,6 @@ _dir_meow_toggle_hidden() {
   else
     _dir_meow_state_set "$state_file" hidden true
   fi
-}
-
-_dir_meow_label() {
-  local state_file=$1
-
-  case $(_dir_meow_mode "$state_file") in
-    eza)
-      if [[ $(_dir_meow_hidden "$state_file") == true ]]; then
-        print -r -- ' 󰉋 eza · hidden '
-      else
-        print -r -- ' 󰉋 eza '
-      fi
-      ;;
-    atuin)
-      print -r -- '  Atuin history '
-      ;;
-  esac
 }
 
 _dir_meow_preview_atuin() {
@@ -264,10 +247,10 @@ _dir_meow_preview_atuin() {
     builtin cd -- "$dir" || return
 
     if [[ -n $bat_cmd ]]; then
-      command atuin history list --session --cwd --cmd-only |
+      command atuin history list --session --cwd --cmd-only --reverse=false |
         "$bat_cmd" --color=always --style=plain --paging=never --language=zsh
     else
-      command atuin history list --session --cwd --cmd-only
+      command atuin history list --session --cwd --cmd-only --reverse=false
     fi
   )
 }
@@ -300,8 +283,8 @@ _dir_meow_preview_eza() {
 
   [[ $hidden == true ]] && args+=(--all)
 
-  # fzf preview output is not necessarily attached directly to a TTY, so make
-  # the enabled setting deterministic instead of relying on eza's auto mode.
+  # Television preview output is not necessarily attached directly to a TTY,
+  # so make the enabled setting deterministic instead of relying on eza's auto mode.
   [[ $icons == true ]] && args+=(--icons=always)
 
   if [[ $tree == true ]]; then
@@ -312,12 +295,39 @@ _dir_meow_preview_eza() {
 }
 
 case ${1:-} in
+  source)
+    (( $# == 2 )) || exit 2
+    integer index=0
+    while IFS= read -r dir; do
+      (( ++index ))
+      printf '%s:%s\t%s\n' "$$" "$index" "$dir"
+    done < "$2"
+    ;;
   preview)
+    (( $# == 4 )) || exit 2
+    # Resolve the path from the original source file without evaluating it as
+    # shell code. The process ID prefix makes each reload's cache key unique.
+    token=$4
+    [[ $token == <1->:<1-> ]] || exit 2
+    integer wanted=${token#*:} index=0
+    while IFS= read -r dir; do
+      (( ++index == wanted )) || continue
+      if [[ $(_dir_meow_mode "$2") == eza ]]; then
+        _dir_meow_preview_eza "$2" "$dir"
+      else
+        _dir_meow_preview_atuin "$dir"
+      fi
+      exit $?
+    done < "$3"
+    exit 1
+    ;;
+  preview-atuin)
+    (( $# == 2 )) || exit 2
+    _dir_meow_preview_atuin "$2"
+    ;;
+  preview-eza)
     (( $# == 3 )) || exit 2
-    case $(_dir_meow_mode "$2") in
-      eza)   _dir_meow_preview_eza "$2" "$3" ;;
-      atuin) _dir_meow_preview_atuin "$3" ;;
-    esac
+    _dir_meow_preview_eza "$2" "$3"
     ;;
   toggle-mode)
     (( $# == 2 )) || exit 2
@@ -326,10 +336,6 @@ case ${1:-} in
   toggle-hidden)
     (( $# == 2 )) || exit 2
     _dir_meow_toggle_hidden "$2"
-    ;;
-  label)
-    (( $# == 2 )) || exit 2
-    _dir_meow_label "$2"
     ;;
   hidden-default)
     (( $# == 1 )) || exit 2
@@ -341,7 +347,7 @@ case ${1:-} in
     print -r -- "$config[4]"
     ;;
   *)
-    print -u2 -r -- 'usage: dir-meow-preview {preview|toggle-mode|toggle-hidden|label|hidden-default} ...'
+    print -u2 -r -- 'usage: dir-meow-preview {source|preview|preview-atuin|preview-eza|toggle-mode|toggle-hidden|hidden-default} ...'
     exit 2
     ;;
 esac

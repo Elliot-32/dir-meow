@@ -1,12 +1,12 @@
 # dir-meow
 
-A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and eza previews.
+A small Zsh directory-stack navigator powered by [Television (`tv`)](https://github.com/alexpasmantier/television), with optional Atuin and eza previews.
 
 `dir-meow` enables Zsh's `AUTO_PUSHD`, so normal `cd` navigation is recorded in the directory stack. It does **not** change `DIRSTACKSIZE`, so your existing stack limit remains in control.
 
 ## Features
 
-- Browse the current directory and Zsh directory stack with a rounded, sectioned `fzf` interface
+- Browse the current directory and Zsh directory stack with Television's rounded, panel-based interface
 - Preserve directory-stack order instead of re-sorting candidates by fuzzy-match score
 - Switch the preview between Atuin command history and eza directory contents
 - Syntax-highlight Atuin command history with bat when available
@@ -19,7 +19,7 @@ A small Zsh directory-stack navigator powered by `fzf`, with optional Atuin and 
 Required:
 
 - Zsh
-- fzf 0.63+ (modern section styling and footer support are used)
+- Television (`tv`) 0.15+
 
 Optional preview tools:
 
@@ -29,7 +29,7 @@ Optional preview tools:
 
 If Atuin or eza is not installed, the corresponding preview shows an explanatory message; directory selection still works. If neither `bat` nor `batcat` is installed, Atuin history is shown without syntax highlighting.
 
-A Nerd Font is recommended for the interface icons. dir-meow does not hard-code a color palette, so your terminal and existing `FZF_DEFAULT_OPTS` color settings remain in control.
+A Nerd Font is recommended for the interface icons. dir-meow ships its own Television channel but does not replace your Television theme, so your existing `tv` theme remains in control.
 
 ## Installation
 
@@ -51,14 +51,19 @@ source /path/to/dir-meow/dir-meow.plugin.zsh
 | Key | Action |
 | --- | --- |
 | `Alt-R` | Open dir-meow |
-| `Ctrl-O` | Switch between Atuin and eza preview |
+| `Ctrl-O` / `Ctrl-F` | Switch between Atuin and eza preview |
 | `Alt-U` | Toggle hidden files in eza preview |
+| `Ctrl-H` | Toggle Television help |
 | `Enter` | `cd` to the selected directory |
 | `Esc` | Cancel |
 
-`Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O`.
+After a selection, prompt hooks are refreshed so themes such as Powerlevel10k show the new directory immediately.
 
-The interface uses separate rounded input, directory-list, preview, and controls sections. `Ctrl-O` also updates the preview label between Atuin history and eza state.
+The initial preview is Atuin. `Esc` cancels without changing directory or showing an error.
+
+`Alt-U` only affects the eza preview. In Atuin mode it is a no-op and does not switch preview providers. The hidden-file state is preserved when switching previews with `Ctrl-O` or `Ctrl-F`.
+
+The interface uses Television's rounded input, results, preview, status, and help components. `Ctrl-O` switches between the Atuin and eza previews; `Ctrl-F` is mapped to the same action.
 
 ## Configuration
 
@@ -114,10 +119,10 @@ Depending on the configuration and current hidden-file state, dir-meow additiona
 
 ## Atuin preview
 
-For each selected directory, dir-meow runs Atuin from that directory. When bat is available, the history is syntax-highlighted as Zsh with decorations and paging disabled:
+For each selected directory, dir-meow runs Atuin from that directory, with the most recently executed command first. When bat is available, the history is syntax-highlighted as Zsh with decorations and paging disabled:
 
 ```zsh
-atuin history list --session --cwd --cmd-only | \
+atuin history list --session --cwd --cmd-only --reverse=false | \
   bat --color=always --style=plain --paging=never --language=zsh
 ```
 
@@ -133,7 +138,7 @@ Candidates come from:
 dirs -pl
 ```
 
-The current directory appears first, followed by the Zsh directory stack. Duplicate paths are removed while preserving their first occurrence, and fzf runs with `--no-sort` so the directory-stack order remains intact.
+The current directory appears first, followed by the Zsh directory stack. Duplicate paths are removed while preserving their first occurrence. The bundled Television channel sets `no_sort = true` and disables frecency, so the directory-stack order remains intact.
 
 ## License
 

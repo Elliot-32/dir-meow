@@ -1,0 +1,72 @@
+[metadata]
+name = "dir-meow"
+description = "Browse the current Zsh directory stack"
+
+[source]
+# A new source process ID invalidates Television 0.15's preview cache on reload.
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" source "$DIR_MEOW_SOURCE_FILE"'
+display = '{split:\t:1..|join:\t}'
+output = '{split:\t:1..|join:\t}'
+shell = "zsh"
+no_sort = true
+frecency = false
+
+[preview]
+# Pass only our numeric token through shell interpolation, never the path.
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" preview "$DIR_MEOW_STATE_FILE" "$DIR_MEOW_SOURCE_FILE" {split:\t:0}'
+shell = "zsh"
+cached = false
+
+[ui]
+layout = "landscape"
+ui_scale = 100
+
+[ui.input_bar]
+position = "top"
+header = "  Search "
+prompt = "› "
+border_type = "rounded"
+padding = { left = 1, right = 1 }
+
+[ui.results_panel]
+border_type = "rounded"
+padding = { left = 1, right = 1 }
+
+[ui.preview_panel]
+size = 60
+header = " Preview "
+footer = " Ctrl-O Preview · Alt-U Hidden "
+scrollbar = true
+border_type = "rounded"
+padding = { left = 1, right = 1 }
+word_wrap = true
+
+[ui.status_bar]
+hidden = false
+
+[ui.help_panel]
+show_categories = true
+hidden = true
+disabled = false
+
+[ui.remote_control]
+disabled = true
+
+[keybindings]
+ctrl-o = ["actions:toggle-mode", "reload_source"]
+ctrl-f = ["actions:toggle-mode", "reload_source"]
+alt-u = ["actions:toggle-hidden", "reload_source"]
+tab = "select_next_entry"
+backtab = "select_prev_entry"
+
+[actions.toggle-mode]
+description = "Synchronize the active preview mode"
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-mode "$DIR_MEOW_STATE_FILE"'
+shell = "zsh"
+mode = "fork"
+
+[actions.toggle-hidden]
+description = "Toggle hidden files in the eza preview"
+command = 'zsh "$DIR_MEOW_PREVIEW_HELPER" toggle-hidden "$DIR_MEOW_STATE_FILE"'
+shell = "zsh"
+mode = "fork"
