@@ -30,5 +30,7 @@ jobs:
           zsh -n dir-meow.plugin.zsh
           zsh -n bin/dir-meow-preview
           python3 -c 'import pathlib, tomllib; tomllib.loads(pathlib.Path("television/dir-meow.toml").read_text())'
+      - name: Install test dependencies
+        run: python3 -m pip install -r tests/requirements.txt
       - name: Regression tests
         run: python3 -m unittest discover -s tests -p '*.py' -v

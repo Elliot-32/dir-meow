@@ -152,6 +152,7 @@ CI runs Zsh syntax checks, TOML parsing, configuration regression tests, and PTY
 integration tests on Ubuntu with Television 0.15.9. To run the tests locally:
 
 ```sh
+python3 -m pip install -r tests/requirements.txt
 python3 -m unittest discover -s tests -p '*.py' -v
 ```
 
