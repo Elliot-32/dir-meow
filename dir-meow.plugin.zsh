@@ -57,14 +57,17 @@ _dir_meow_widget() {
     return 1
   }
 
-  local hidden_default
-  hidden_default=$(zsh "$DIR_MEOW_PREVIEW_HELPER" hidden-default) || {
+  # A fresh snapshot per invocation; previews inherit it without rereading disk.
+  local -x DIR_MEOW_EZA_CONFIG
+  DIR_MEOW_EZA_CONFIG=$(zsh "$DIR_MEOW_PREVIEW_HELPER" config) || {
     rm -f -- "$source_file" "$state_file"
-    zle -M "${hidden_default:-dir-meow: failed to read configuration}"
+    zle -M "${DIR_MEOW_EZA_CONFIG:-dir-meow: failed to read configuration}"
     return 1
   }
 
-  print -r -- "hidden=$hidden_default" >| "$state_file"
+  local -a config
+  config=("${(@f)DIR_MEOW_EZA_CONFIG}")
+  print -r -- "hidden=$config[4]" >| "$state_file"
 
   # Television source, preview, and action subprocesses inherit these scoped
   # variables. The bundled channel consumes them without touching user config.

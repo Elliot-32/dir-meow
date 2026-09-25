@@ -110,6 +110,11 @@ export MEOW_LEVEL=4
 
 only overrides `level`; the remaining options still come from the config file or built-in defaults.
 
+Configuration is parsed once each time the picker opens. All eza previews in
+that invocation share the same snapshot; edits to the config file or environment
+take effect the next time you open dir-meow. `Alt-H` updates the separate runtime
+hidden-file state immediately.
+
 The eza preview always uses:
 
 ```text
@@ -140,6 +145,17 @@ dirs -pl
 ```
 
 The current directory appears first, followed by the Zsh directory stack. Duplicate paths are removed while preserving their first occurrence. The bundled Television channel sets `no_sort = true` and disables frecency, so the directory-stack order remains intact.
+
+## Development
+
+CI runs Zsh syntax checks, TOML parsing, configuration regression tests, and PTY
+integration tests on Ubuntu with Television 0.15.9. To run the tests locally:
+
+```sh
+python3 -m unittest discover -s tests -p '*.py' -v
+```
+
+Install Zsh and Television first, or set `TV_BIN` to the Television executable.
 
 ## License
 
