@@ -247,10 +247,15 @@ _dir_meow_preview_eza() {
   fi
 
   local config_output
-  config_output=$(_dir_meow_eza_config) || {
-    print -r -- "$config_output"
-    return 0
-  }
+  if (( ${+DIR_MEOW_EZA_CONFIG} )); then
+    config_output=$DIR_MEOW_EZA_CONFIG
+  else
+    # Standalone helper calls still resolve their own configuration.
+    config_output=$(_dir_meow_eza_config) || {
+      print -r -- "$config_output"
+      return 0
+    }
+  fi
 
   local -a config
   config=("${(@f)config_output}")
@@ -277,6 +282,10 @@ _dir_meow_preview_eza() {
 }
 
 case ${1:-} in
+  config)
+    (( $# == 1 )) || exit 2
+    _dir_meow_eza_config
+    ;;
   source)
     (( $# == 2 )) || exit 2
     integer index=0
@@ -327,7 +336,7 @@ case ${1:-} in
     print -r -- "$config[4]"
     ;;
   *)
-    print -u2 -r -- 'usage: dir-meow-preview {source|preview|preview-atuin|preview-eza|toggle-hidden|hidden-default} ...'
+    print -u2 -r -- 'usage: dir-meow-preview {config|source|preview|preview-atuin|preview-eza|toggle-hidden|hidden-default} ...'
     exit 2
     ;;
 esac

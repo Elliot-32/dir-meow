@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Zsh and Television
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
+          curl --fail --location --retry 3 https://github.com/alexpasmantier/television/releases/download/0.15.9/tv-0.15.9-x86_64-unknown-linux-gnu.tar.gz -o /tmp/tv.tar.gz
+          echo '87d47d071f3c3bac939b1e9b2c63e45c299c9ad31cf8711f63dede614d0c6608  /tmp/tv.tar.gz' | sha256sum --check
+          mkdir /tmp/television
+          tar -xzf /tmp/tv.tar.gz -C /tmp/television
+          tv_binary=$(find /tmp/television -type f -name tv -print -quit)
+          test -n "$tv_binary"
+          sudo install "$tv_binary" /usr/local/bin/tv
+      - name: Check syntax
+        run: |
+          zsh -n dir-meow.plugin.zsh
+          zsh -n bin/dir-meow-preview
+          python3 -c 'import pathlib, tomllib; tomllib.loads(pathlib.Path("television/dir-meow.toml").read_text())'
+      - name: Install test dependencies
+        run: python3 -m pip install -r tests/requirements.txt
+      - name: Regression tests
+        run: python3 -m unittest discover -s tests -p '*.py' -v

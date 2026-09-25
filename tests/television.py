@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Integration regression tests; run with TV_BIN=/path/to/tv python3 tests/television.py."""
+import codecs
 import fcntl
 import os
 from pathlib import Path
@@ -13,6 +14,8 @@ import tempfile
 import termios
 import time
 import unittest
+
+import pyte
 
 ROOT = Path(__file__).resolve().parents[1]
 TV = os.environ.get('TV_BIN') or shutil.which('tv')
@@ -31,8 +34,8 @@ class TelevisionTests(unittest.TestCase):
                 binaries = path / 'bin'
                 binaries.mkdir()
                 for name, body in {
-                    'eza': 'printf "eza %s\\n" "$*" >> "$TEST_LOG"\n',
-                    'atuin': 'echo atuin >> "$TEST_LOG"\n',
+                    'eza': 'printf "eza %s\\n" "$*" >> "$TEST_LOG"\nprintf "eza %s\\n" "$*"\n',
+                    'atuin': 'echo atuin >> "$TEST_LOG"\necho atuin preview\n',
                 }.items():
                     script = binaries / name
                     script.write_text('#!/bin/sh\n' + body)
@@ -51,7 +54,11 @@ class TelevisionTests(unittest.TestCase):
                     os.dup2(os.open(path / 'out', os.O_CREAT | os.O_WRONLY, 0o600), 1)
                     os.execv(TV, [TV, '--cable-dir', str(ROOT / 'television'), 'dir-meow'])
 
-                screen = bytearray()
+                # Ratatui sends cursor-positioned cell updates, not complete lines.
+                # Decode the terminal state before checking the preview indicators.
+                terminal = pyte.Screen(120, 30)
+                stream = pyte.Stream(terminal)
+                decoder = codecs.getincrementaldecoder('utf-8')('replace')
 
                 def pump(seconds=0.6):
                     deadline = time.monotonic() + seconds
@@ -61,7 +68,7 @@ class TelevisionTests(unittest.TestCase):
                                 output = os.read(fd, 65536)
                             except OSError:
                                 return
-                            screen.extend(output)
+                            stream.feed(decoder.decode(output))
                             if b'\x1b[6n' in output:
                                 os.write(fd, b'\x1b[1;1R')
 
@@ -75,14 +82,14 @@ class TelevisionTests(unittest.TestCase):
                 try:
                     pump()
                     self.assertIn('atuin', log())
-                    self.assertIn('● ○'.encode(), screen)
+                    self.assertIn('● ○', terminal.display[0])
                     press(b'\x1b[B')
                     press(b'\x1bh')  # Alt-H updates eza state even while Atuin is active.
                     self.assertIn('hidden=false', (path / 'state').read_text())
                     self.assertEqual(log()[-1], 'atuin')
                     press(b'\x06')  # Ctrl-F: eza via Television's native cycle_previews.
                     self.assertNotIn('--all', log()[-1])
-                    self.assertIn('○ ●'.encode(), screen)
+                    self.assertIn('○ ●', terminal.display[0])
                     self.assertIn(str(target), log()[-1])
                     count = len(log())
                     press(b'\x1bh')  # Refresh the SAME selected directory with hidden files.
@@ -95,7 +102,9 @@ class TelevisionTests(unittest.TestCase):
                     press(b'\x06')  # Ctrl-F: Atuin.
                     self.assertEqual(log()[-1], 'atuin')
                     press(b'\x06')  # Back to eza preserves hidden=true.
-                    self.assertIn('--all', log()[-1])
+                    # Television may reuse the cached eza preview when cycling.
+                    self.assertIn('○ ●', terminal.display[0])
+                    self.assertIn('--all', '\n'.join(terminal.display))
                     press(b'\x1bh')
                     self.assertNotIn('--all', log()[-1])
                     press(b'\x1b' if cancel else b'\r')
@@ -147,3 +156,4 @@ class TelevisionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
